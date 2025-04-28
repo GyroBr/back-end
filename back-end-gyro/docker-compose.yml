@@ -12,11 +12,8 @@ services:
     ports:
       - "5432:5432"
 
-
   gyro-back-end:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: eduardomelodeoliveira/gyro-application-prod:backend-v3
     container_name: gyro-backend-container
     ports:
       - "8080:8080"
@@ -36,5 +33,4 @@ services:
       SPRINGDOC_API_DOCS_ENABLED: "true"
       SPRINGDOC_SWAGGER_UI_ENABLED: "true"
     volumes:
-       - ./src/main/java/com/Gyro/back_end_gyro/infra/bucket:/app/infra/bucket
-
+      - ./src/main/java/com/Gyro/back_end_gyro/infra/bucket:/app/infra/bucket

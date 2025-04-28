@@ -30,6 +30,7 @@ public class Product {
     private Double price;
     private String volume;
     private Integer quantity;
+    @Column(columnDefinition = "TEXT")
     private String image;
     private LocalDate expiresAt;
     private Integer warningQuantity;
