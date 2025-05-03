@@ -1,6 +1,7 @@
 package com.Gyro.back_end_gyro.infra.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +27,12 @@ public class SecurityConfig {
 
     private final SecurityFilter securityFilter;
 
+    @Value("${HTTP_IP_ADDRESS}")
+    private String ipFromHttp;
+
+    @Value("${HTTPS_IP_ADDRESS}")
+    private String ipFromHttps;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -41,7 +48,7 @@ public class SecurityConfig {
                             "/v3/api-docs/**",
                             "/swagger-ui/**",
                             "/swagger-ui.html"
-                            ).permitAll();
+                    ).permitAll();
                     req.requestMatchers("/orders/register").hasRole("EMPLOYEE");
                     req.requestMatchers("/products/top-products").hasRole("ADMIN");
                     req.requestMatchers("/orders/get-all-orders").hasRole("ADMIN");
@@ -66,7 +73,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173","http://frontend-dev:5173", "http://frontend-prod:3000"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173", ipFromHttp, ipFromHttps));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

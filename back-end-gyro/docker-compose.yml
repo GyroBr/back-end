@@ -13,7 +13,9 @@ services:
       - "5432:5432"
 
   gyro-back-end:
-    image: eduardomelodeoliveira/gyro-application-prod:backend-v3
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: gyro-backend-container
     ports:
       - "8080:8080"
@@ -27,6 +29,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      HTTP_IP_ADDRESS: ${HTTP_IP_ADDRESS}
+      HTTPS_IP_ADDRESS: ${HTTPS_IP_ADDRESS}
       API_SECRET: ${API_SECRET}
       SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
       SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 100MB

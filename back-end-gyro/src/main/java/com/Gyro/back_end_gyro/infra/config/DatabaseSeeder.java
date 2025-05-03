@@ -6,7 +6,6 @@ import com.Gyro.back_end_gyro.domain.company.dto.CompanyRequestDTO;
 import com.Gyro.back_end_gyro.domain.company.entity.Company;
 import com.Gyro.back_end_gyro.domain.company.enums.Sector;
 import com.Gyro.back_end_gyro.domain.company.repository.CompanyRepository;
-import com.Gyro.back_end_gyro.domain.company.service.CompanyService;
 import com.Gyro.back_end_gyro.domain.employee.dto.EmployeeRequestDTO;
 import com.Gyro.back_end_gyro.domain.employee.entity.Employee;
 import com.Gyro.back_end_gyro.domain.employee.repository.EmployeeRepository;
@@ -18,6 +17,7 @@ import com.Gyro.back_end_gyro.domain.user.entity.User;
 import com.Gyro.back_end_gyro.domain.user.enums.Roles;
 import com.Gyro.back_end_gyro.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -33,7 +33,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final ProductRepository productRepository;
-
 
     private Company toSeed(CompanyRequestDTO companyRequestDTO) {
         User user = userService.createUser(new UserRequestDTO(companyRequestDTO.name(), companyRequestDTO.email(), companyRequestDTO.password(), Roles.ROLE_ADMIN));
