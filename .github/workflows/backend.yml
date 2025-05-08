@@ -1,0 +1,41 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: eduardomelodeoliveira/gyro-application-prod:backend-v10
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build e Push da imagem Docker
+        run: |
+          docker build -t $DOCKER_IMAGE .
+          docker push $DOCKER_IMAGE
+
+      - name: Acessar instância privada via instância pública (SSH)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PUBLIC_INSTANCE_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo ssh -o StrictHostKeyChecking=no -i ~/minhassh.pem ubuntu@10.0.1.100 << 'EOF'
+              cd ~
+              sudo docker-compose pull gyro-back-end
+              sudo docker-compose up -d --no-deps --build gyro-back-end
+            EOF
