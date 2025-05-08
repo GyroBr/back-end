@@ -24,7 +24,7 @@ jobs:
 
       - name: Build e Push da imagem Docker
         run: |
-          docker build -t $DOCKER_IMAGE .
+          docker build -t $DOCKER_IMAGE ./back-end-gyro
           docker push $DOCKER_IMAGE
 
       - name: Acessar instância privada via instância pública (SSH)
