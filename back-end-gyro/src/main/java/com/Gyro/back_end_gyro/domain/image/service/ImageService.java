@@ -16,7 +16,7 @@ public class ImageService {
 
     private final S3Client s3Client;
 
-    private final String bucketName = "esperando o corno do davi me dizer no nome do bucket";
+    private final String bucketName = "gyro-aws-bucket";
 
 
     public String saveImage(MultipartFile file) {
