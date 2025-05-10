@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: eduardomelodeoliveira/gyro-application-prod:backend-v10
+  DOCKER_IMAGE: eduardomelodeoliveira/gyro-application-prod:backend-v11
 
 jobs:
   build-and-deploy:
