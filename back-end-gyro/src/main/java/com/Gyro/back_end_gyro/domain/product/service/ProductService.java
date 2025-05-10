@@ -1,6 +1,5 @@
 package com.Gyro.back_end_gyro.domain.product.service;
 
-
 import com.Gyro.back_end_gyro.domain.company.entity.Company;
 import com.Gyro.back_end_gyro.domain.image.service.ImageService;
 import com.Gyro.back_end_gyro.domain.product.dto.ProductRequestDTO;
@@ -22,12 +21,12 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ImageService imageService;
 
-
     public ProductResponseDTO createProduct(Company company, ProductRequestDTO productRequestDTO, MultipartFile imageFile) {
-        String imagePath = imageService.saveImage(imageFile);
+        String imageUrl = imageService.saveImage(imageFile);
         Product product = new Product(productRequestDTO);
         product.setCompany(company);
-        product.setImage(imagePath);
+        product.setImage(imageUrl);
+
         return new ProductResponseDTO(productRepository.save(product));
     }
 
@@ -37,25 +36,19 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-
     public List<ProductResponseDTO> getTop10MostSellingProducts(Long companyId) {
-
         return productRepository.findTopSellingProducts(companyId)
                 .stream()
                 .map(ProductResponseDTO::new)
                 .collect(Collectors.toList());
-
     }
 
-
     public List<ProductResponseDTO> getExiperedProducts(Long companyId) {
-
         return productRepository.findByCompanyIdAndIsExpiredProductTrue(companyId)
                 .stream()
                 .map(ProductResponseDTO::new)
                 .collect(Collectors.toList());
     }
-
 
     public List<String> getAllProductCategories(Company company){
         return company.getProducts().stream()
