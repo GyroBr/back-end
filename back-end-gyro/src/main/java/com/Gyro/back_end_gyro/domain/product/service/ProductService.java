@@ -58,7 +58,7 @@ public class ProductService {
     }
 
     public List<ProductResponseDTO> getOutOfStockProducts(Long companyId) {
-        return productRepository.findByCompanyIdAndIsExpiredProductTrue(companyId)
+        return productRepository.findByCompanyIdAndIsOutOfStockTrue(companyId)
                 .stream()
                 .map(ProductResponseDTO::new)
                 .collect(Collectors.toList());

@@ -38,6 +38,7 @@ public class Product {
     private Integer totalSales = 0;
     private Boolean isExpiredProduct;
     private Boolean isOutOfStock;
+    private Boolean isSendedToEmail;
     private String category;
 
 
@@ -60,6 +61,7 @@ public class Product {
         this.warningQuantity = productRequestDTO.warningQuantity();
         this.barCode = productRequestDTO.barCode();
         this.category = replateToUpper(productRequestDTO.category());
+        this.isSendedToEmail = false;
     }
 
     private String replateToUpper(String category) {
