@@ -1,39 +1,47 @@
-  version: "3.8"
-  services:
-    db-gyro:
-      image: postgres:latest
-      container_name: gyro-db-container
-      env_file:
-        - .env
-      environment:
-        POSTGRES_DB: ${POSTGRES_DB}
-        POSTGRES_USER: ${POSTGRES_USER}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      ports:
-        - "5432:5432"
+version: "3.8"
+services:
+  db-gyro:
+    image: postgres:latest
+    container_name: gyro-db-container
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
 
-    gyro-back-end:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      ports:
-        - "8080:8080"
-      depends_on:
-        db-gyro:
-          condition: service_started
-      env_file:
-        - .env
-      environment:
-        SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-        SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-        SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-        SPRING_JPA_HIBERNATE_DDL_AUTO: update
-        HTTP_IP_ADDRESS: ${HTTP_IP_ADDRESS}
-        HTTPS_IP_ADDRESS: ${HTTPS_IP_ADDRESS}
-        API_SECRET: ${API_SECRET}
-        SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
-        SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 100MB
-        SPRINGDOC_API_DOCS_ENABLED: "true"
-        SPRINGDOC_SWAGGER_UI_ENABLED: "true"
-      volumes:
-        - ./src/main/java/com/Gyro/back_end_gyro/infra/bucket:/app/infra/bucket
+  gyro-back-end:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gyro-backend-container
+    ports:
+      - "8080:8080"
+    depends_on:
+      db-gyro:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      HTTP_IP_ADDRESS: ${HTTP_IP_ADDRESS}
+      HTTPS_IP_ADDRESS: ${HTTPS_IP_ADDRESS}
+      API_SECRET: ${API_SECRET}
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 100MB
+      SPRINGDOC_API_DOCS_ENABLED: "true"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE}
+    volumes:
+      - ./src/main/java/com/Gyro/back_end_gyro/infra/bucket:/app/infra/bucket
