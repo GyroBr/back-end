@@ -17,53 +17,97 @@ public class ProductScheduleService {
     private final ProductRepository productRepository;
     private final EmailService emailService;
 
+    @Scheduled(fixedRate = 60000)
+    public void handleExpiredProducts() {
+        List<Product> allProducts = productRepository.findAll();
+        Map<String, List<Product>> productsByEmail = new HashMap<>();
 
-    @Scheduled(fixedRate = 30000)
-    public void setExpiredProduct() {
-        List<Product> products = productRepository.findAll();
-        Map<String, List<Product>> expiredProductsByEmail = new HashMap<>();
-
-        for (Product product : products) {
-            if (product.getExpiresAt().equals(LocalDate.now())) {
+        for (Product product : allProducts) {
+            if (LocalDate.now().isAfter(product.getExpiresAt()) && !product.getIsExpiredProduct()) {
                 product.setIsExpiredProduct(true);
+                product.setIsSendedToEmail(false);
+                productRepository.save(product);
+
                 String email = product.getCompany().getEmail();
-                expiredProductsByEmail
-                        .computeIfAbsent(email, k -> new ArrayList<>())
-                        .add(product);
+                if (!productsByEmail.containsKey(email)) {
+                    productsByEmail.put(email, new ArrayList<>());
+                }
+                productsByEmail.get(email).add(product);
             }
         }
 
-        expiredProductsByEmail.forEach((email, expiredProducts) -> {
+        for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
             emailService.sendEmail(
-                    email,
+                    entry.getKey(),
                     "Produtos vencidos",
-                    "Produtos vencidos: %s".formatted(expiredProducts)
+                    buildExpiredProductsMessage(entry.getValue())
             );
-        });
+
+            for (Product product : entry.getValue()) {
+                product.setIsSendedToEmail(true);
+                productRepository.save(product);
+            }
+        }
     }
 
-    @Scheduled(fixedRate = 30000)
-    public void setOutOfStockProduct() {
-        List<Product> products = productRepository.findAll();
-        Map<String, List<Product>> outOfStockProductsByEmail = new HashMap<>();
+    @Scheduled(fixedRate = 60000)
+    public void handleOutOfStockProducts() {
+        List<Product> allProducts = productRepository.findAll();
+        Map<String, List<Product>> productsByEmail = new HashMap<>();
 
-        for (Product product : products) {
-            if (product.getQuantity() <= product.getWarningQuantity() && !product.getIsSendedToEmail()) {
-                product.setIsOutOfStock(true);
-                product.setIsSendedToEmail(true);
-                String email = product.getCompany().getEmail();
-                outOfStockProductsByEmail
-                        .computeIfAbsent(email, k -> new ArrayList<>())
-                        .add(product);
+        int minWarning = Integer.MAX_VALUE;
+        for (Product product : allProducts) {
+            if (product.getWarningQuantity() < minWarning) {
+                minWarning = product.getWarningQuantity();
             }
         }
 
-        outOfStockProductsByEmail.forEach((email, outOfStockProducts) -> {
+        for (Product product : allProducts) {
+            if (product.getQuantity() <= minWarning && !product.getIsSendedToEmail()) {
+                product.setIsOutOfStock(true);
+                product.setIsSendedToEmail(true);
+                productRepository.save(product);
+
+                String email = product.getCompany().getEmail();
+                if (!productsByEmail.containsKey(email)) {
+                    productsByEmail.put(email, new ArrayList<>());
+                }
+                productsByEmail.get(email).add(product);
+            }
+        }
+
+        for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
             emailService.sendEmail(
-                    email,
-                    "Produtos fora de estoque",
-                    "Os seguintes produtos estão fora de estoque: %s".formatted(outOfStockProducts)
+                    entry.getKey(),
+                    "Produtos com estoque baixo",
+                    buildOutOfStockMessage(entry.getValue())
             );
-        });
+        }
+    }
+
+    private String buildExpiredProductsMessage(List<Product> products) {
+        StringBuilder sb = new StringBuilder("Produtos vencidos:\n\n");
+        for (Product product : products) {
+            sb.append("- ")
+                    .append(product.getName())
+                    .append(" (Venceu em: ")
+                    .append(product.getExpiresAt())
+                    .append(")\n");
+        }
+        return sb.toString();
+    }
+
+    private String buildOutOfStockMessage(List<Product> products) {
+        StringBuilder sb = new StringBuilder("Produtos abaixo do estoque mínimo:\n\n");
+        for (Product product : products) {
+            sb.append("- ")
+                    .append(product.getName())
+                    .append(" (Estoque atual: ")
+                    .append(product.getQuantity())
+                    .append(", Mínimo: ")
+                    .append(product.getWarningQuantity())
+                    .append(")\n");
+        }
+        return sb.toString();
     }
 }
