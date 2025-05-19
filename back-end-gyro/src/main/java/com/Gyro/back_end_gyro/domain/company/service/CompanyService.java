@@ -35,6 +35,17 @@ public class CompanyService {
 
     }
 
+    public CompanyResponseDTO updateCompany(Long companyId, CompanyRequestDTO companyRequestDTO) {
+        var company = existsCompanyId(companyId);
+        var user = company.getUser();
+        var updateCompany = new Company(companyRequestDTO);
+        var updaptedUser = userService.createUser(new UserRequestDTO(updateCompany.getName(), updateCompany.getEmail(), updateCompany.getPassword(), Roles.ROLE_ADMIN));
+        updateCompany.setId(companyId);
+        updaptedUser.setId(user.getId());
+        return new CompanyResponseDTO(companyRepository.save(company));
+
+    }
+
     public CompanyResponseDTO getCompanyById(Long id) {
         return new CompanyResponseDTO(existsCompanyId(id));
     }
@@ -43,7 +54,6 @@ public class CompanyService {
     public Company existsCompanyId(Long companyId) {
         return companyRepository.findById(companyId).orElseThrow(() -> new NotFoundException("company not found"));
     }
-
 
 
 }

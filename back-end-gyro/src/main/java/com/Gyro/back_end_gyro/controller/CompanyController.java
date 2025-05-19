@@ -98,4 +98,57 @@ public class CompanyController {
     public ResponseEntity<CompanyResponseDTO> getCompanyById(@RequestHeader("Authorization") String tokenIssuer) {
         return ResponseEntity.ok(companyService.getCompanyById(tokenService.getCompanyIdFromToken(tokenIssuer)));
     }
+
+    @PutMapping
+    @Operation(
+            summary = "Atualizar dados da empresa",
+            description = "Atualiza os dados da empresa associada ao token JWT fornecido no cabeçalho."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Empresa atualizada com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CompanyResponseDTO.class),
+                            examples = @ExampleObject(
+                                    value = "{\"id\": 1, \"name\": \"Nova Empresa\", \"cnpj\": \"12345678901234\", \"email\": \"novoemail@empresa.com\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Requisição inválida",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Dados inválidos fornecidos\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autorizado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Empresa não encontrada",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Empresa não encontrada\"}"
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<CompanyResponseDTO> updateCompany(@RequestHeader("Authorization") String tokenIssuer, @RequestBody @Valid CompanyRequestDTO companyRequestDTO) {
+        var companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
+        return ResponseEntity.ok(companyService.updateCompany(companyId, companyRequestDTO));
+    }
 }

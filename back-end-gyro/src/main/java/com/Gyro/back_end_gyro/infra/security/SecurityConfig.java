@@ -44,7 +44,6 @@ public class SecurityConfig {
                             "/auths/login",
                             "/companies/register",
                             "/externals/{cep}",
-                            "/images/render/{productId}",
                             "/v3/api-docs/**",
                             "/swagger-ui/**",
                             "/swagger-ui.html"
