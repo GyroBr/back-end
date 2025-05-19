@@ -34,7 +34,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            ssh -o StrictHostKeyChecking=no ubuntu@10.0.1.100 '
+            ssh -o StrictHostKeyChecking=no -i ~/minhassh.pem ubuntu@10.0.1.100 '
               cd ~ &&
               sudo docker system prune -a --volumes -f &&
               sudo docker-compose pull gyro-back-end &&
