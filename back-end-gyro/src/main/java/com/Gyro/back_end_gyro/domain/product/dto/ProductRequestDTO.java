@@ -23,8 +23,6 @@ public record ProductRequestDTO(
         @Positive
         Integer quantity,
 
-        String image,
-
         @FutureOrPresent
         LocalDate expiresAt,
 

@@ -27,7 +27,6 @@ public class CompanyService {
         User user = userService.createUser(new UserRequestDTO(companyRequestDTO.name(), companyRequestDTO.email(), companyRequestDTO.password(), Roles.ROLE_ADMIN));
         Address address = new Address(companyRequestDTO.address());
         Company company = new Company(companyRequestDTO);
-        company.setPassword(passwordEncoder.encode(companyRequestDTO.password()));
         company.setUser(user);
         company.setAddress(address);
 
@@ -42,6 +41,7 @@ public class CompanyService {
         var updaptedUser = userService.createUser(new UserRequestDTO(updateCompany.getName(), updateCompany.getEmail(), updateCompany.getPassword(), Roles.ROLE_ADMIN));
         updateCompany.setId(companyId);
         updaptedUser.setId(user.getId());
+        updateCompany.setUser(updaptedUser);
         return new CompanyResponseDTO(companyRepository.save(company));
 
     }

@@ -190,4 +190,97 @@ public class EmployeeController {
 
         return ResponseEntity.ok(employees);
     }
+
+    @PutMapping
+    @Operation(
+            summary = "Atualizar funcionário",
+            description = "Atualiza os dados do funcionário associado ao token JWT fornecido no cabeçalho."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Funcionário atualizado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = EmployeeResponseDTO.class),
+                            examples = @ExampleObject(
+                                    value = "{\"id\": 1, \"name\": \"João Silva\", \"email\": \"joao.silva@empresa.com\", \"role\": \"ADMIN\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Requisição inválida\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autorizado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Funcionário não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Funcionário não encontrado\"}"
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<EmployeeResponseDTO> updateEmployee(
+            @RequestHeader("Authorization") String tokenIssuer,
+            @RequestBody @Valid EmployeeRequestDTO employeeRequestDTO
+    ) {
+        return ResponseEntity.ok(employeeService.updateEmployee(tokenService.getEmployeeIdFromToken(tokenIssuer), employeeRequestDTO));
+    }
+
+    @DeleteMapping
+    @Operation(
+            summary = "Deletar funcionário",
+            description = "Remove o funcionário associado ao token JWT fornecido no cabeçalho."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Funcionário deletado com sucesso",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Não autorizado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Funcionário não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Funcionário não encontrado\"}"
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<Void> deleteEmployee(@RequestHeader("Authorization") String tokenIssuer) {
+        employeeService.deleteEmployee(tokenService.getEmployeeIdFromToken(tokenIssuer));
+        return ResponseEntity.noContent().build();
+    }
+
 }

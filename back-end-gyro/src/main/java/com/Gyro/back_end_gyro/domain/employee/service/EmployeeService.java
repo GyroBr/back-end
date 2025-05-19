@@ -29,10 +29,26 @@ public class EmployeeService {
     public EmployeeResponseDTO createEmployee(Company company, EmployeeRequestDTO requestDTO) {
         Employee employee = new Employee(requestDTO);
         User user = userService.createUser(new UserRequestDTO(employee.getName(), employee.getEmail(), employee.getPassword(), Roles.ROLE_EMPLOYEE));
-        employee.setPassword(passwordEncoder.encode(employee.getPassword()));
         employee.setUser(user);
         employee.setCompany(company);
         return new EmployeeResponseDTO(employeeRepository.save(employee));
+    }
+
+    public EmployeeResponseDTO updateEmployee(Long employeeId, EmployeeRequestDTO requestDTO) {
+        var employee = existsEmployeeById(employeeId);
+        var user = employee.getUser();
+        var updatedEmployee = new Employee(requestDTO);
+        updatedEmployee.setId(employeeId);
+        var updatedUser = userService.createUser(new UserRequestDTO(updatedEmployee.getName(), updatedEmployee.getEmail(), updatedEmployee.getPassword(), Roles.ROLE_EMPLOYEE));
+        updatedUser.setId(user.getId());
+        updatedEmployee.setUser(updatedUser);
+        return new EmployeeResponseDTO(employeeRepository.save(updatedEmployee));
+
+    }
+
+    public void deleteEmployee(Long employeeId) {
+        var employee = existsEmployeeById(employeeId);
+        employeeRepository.delete(employee);
     }
 
     public EmployeeResponseDTO getEmployeeById(Long employeeId) {

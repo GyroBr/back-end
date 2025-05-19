@@ -56,7 +56,6 @@ public class Product {
         this.price = productRequestDTO.price();
         this.volume = productRequestDTO.volume();
         this.quantity = productRequestDTO.quantity();
-        this.image = productRequestDTO.image();
         this.expiresAt = productRequestDTO.expiresAt();
         this.warningQuantity = productRequestDTO.warningQuantity();
         this.barCode = productRequestDTO.barCode();
