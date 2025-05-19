@@ -3,6 +3,7 @@ package com.Gyro.back_end_gyro.domain.email.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,9 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${HTTPS_IP_ADDRESS}")
+    private String gyroUrl;
+
     public void sendEmail(String to, String subject, String content) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -20,7 +24,7 @@ public class EmailService {
 
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(buildTemplate(content), true);
+            helper.setText(buildTemplate(content,this.gyroUrl), true);
 
             mailSender.send(message);
         } catch (MessagingException e) {
@@ -29,7 +33,7 @@ public class EmailService {
     }
 
 
-    private String buildTemplate(String content) {
+    private String buildTemplate(String content,String ourSite) {
         return """
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -49,7 +53,7 @@ public class EmailService {
                         <h2 style="color: #000000;">Olá!</h2>
                         <p style="color: #333333; font-size: 16px; line-height: 1.5;">%s</p>
                         <div style="margin-top: 30px; text-align: center;">
-                            <a href="https://gyro.com" style="background-color: #FFA500; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Acessar</a>
+                            <a href="%s/login" style="background-color: #FFA500; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Acessar</a>
                         </div>
                     </td>
                 </tr>
@@ -61,7 +65,7 @@ public class EmailService {
             </table>
         </body>
         </html>
-    """.formatted(content);
+    """.formatted(content,ourSite);
     }
 
 }
