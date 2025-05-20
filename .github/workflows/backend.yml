@@ -34,16 +34,19 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo ssh -o StrictHostKeyChecking=no -i /home/ubuntu/minhassh.pem ubuntu@10.0.1.100 "
-              cd ~ &&
-              echo 'Parando e removendo container antigo...' &&
-              sudo docker-compose stop gyro-back-end &&
-              sudo docker-compose rm -f gyro-back-end &&
+            for HOST in 10.0.1.100 10.0.1.101; do
+              echo "▶ Acessando $HOST"
 
-              echo 'Removendo imagem antiga...' &&
-              sudo docker rmi -f \$(docker images 'eduardomelodeoliveira/gyro-application-prod:backend-v12' -q) || true &&
+              sudo ssh -o StrictHostKeyChecking=no -i /home/ubuntu/minhassh.pem ubuntu@$HOST "
+                cd /home/ubuntu &&
+                echo 'Parando e removendo container antigo em $HOST...' &&
+                sudo docker-compose down &&
+                sudo docker system prune -a --volumes -f &&
 
-              echo 'Atualizando imagem e subindo container...' &&
-              sudo docker-compose pull gyro-back-end &&
-              sudo docker-compose up -d --no-deps --build gyro-back-end
-            "
+                echo 'Atualizando imagem e subindo container em $HOST...' &&
+                sudo docker-compose pull &&
+                sudo docker-compose up -d --build
+              "
+
+              echo "Deploy concluído em $HOST"
+            done
