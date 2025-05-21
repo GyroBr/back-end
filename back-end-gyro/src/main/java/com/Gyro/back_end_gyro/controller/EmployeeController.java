@@ -191,7 +191,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employees);
     }
 
-    @PutMapping("/{employeeId}")
+    @PutMapping("update-employee/{employeeId}")
     @Operation(
             summary = "Atualizar funcionário",
             description = "Atualiza os dados do funcionário associado ao token JWT fornecido no cabeçalho."
@@ -246,7 +246,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.updateEmployee(employeeId, employeeRequestDTO));
     }
 
-    @DeleteMapping("/{employeeId}")
+    @DeleteMapping("/delete-employee/{employeeId}")
     @Operation(
             summary = "Deletar funcionário",
             description = "Remove o funcionário associado ao token JWT fornecido no cabeçalho."

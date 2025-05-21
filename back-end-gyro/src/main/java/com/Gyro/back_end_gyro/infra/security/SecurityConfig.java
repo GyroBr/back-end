@@ -53,6 +53,8 @@ public class SecurityConfig {
                     req.requestMatchers("/orders/get-all-orders").hasRole("ADMIN");
                     req.requestMatchers("/employees/top-employees").hasRole("ADMIN");
                     req.requestMatchers("/order-products/**").hasRole("EMPLOYEE");
+                    req.requestMatchers("/employees/delete-employee/").hasRole("ADMIN");
+                    req.requestMatchers("/employees/update-employee/").hasRole("ADMIN");
                     req.anyRequest().hasAnyRole("ADMIN", "EMPLOYEE");
                 }).addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
