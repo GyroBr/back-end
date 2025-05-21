@@ -191,7 +191,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employees);
     }
 
-    @PutMapping
+    @PutMapping("/{employeeId}")
     @Operation(
             summary = "Atualizar funcionário",
             description = "Atualiza os dados do funcionário associado ao token JWT fornecido no cabeçalho."
@@ -240,13 +240,13 @@ public class EmployeeController {
             )
     })
     public ResponseEntity<EmployeeResponseDTO> updateEmployee(
-            @RequestHeader("Authorization") String tokenIssuer,
+            @PathVariable Long employeeId,
             @RequestBody @Valid EmployeeRequestDTO employeeRequestDTO
     ) {
-        return ResponseEntity.ok(employeeService.updateEmployee(tokenService.getEmployeeIdFromToken(tokenIssuer), employeeRequestDTO));
+        return ResponseEntity.ok(employeeService.updateEmployee(employeeId, employeeRequestDTO));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{employeeId}")
     @Operation(
             summary = "Deletar funcionário",
             description = "Remove o funcionário associado ao token JWT fornecido no cabeçalho."
@@ -278,8 +278,8 @@ public class EmployeeController {
                     )
             )
     })
-    public ResponseEntity<Void> deleteEmployee(@RequestHeader("Authorization") String tokenIssuer) {
-        employeeService.deleteEmployee(tokenService.getEmployeeIdFromToken(tokenIssuer));
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long employeeId) {
+        employeeService.deleteEmployee(employeeId);
         return ResponseEntity.noContent().build();
     }
 

@@ -401,5 +401,81 @@ public class ProductController {
 
         return ResponseEntity.ok(categories);
     }
+
+    @PutMapping("/{productId}")
+    @Operation(
+            summary = "Atualizar um produto existente",
+            description = "Atualiza as informações de um produto com base no ID fornecido. Requer um corpo com os dados do produto a ser atualizado."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Produto atualizado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductResponseDTO.class),
+                            examples = @ExampleObject(
+                                    value = "{\"id\": 1, \"name\": \"Produto Atualizado\", \"description\": \"Nova descrição\", \"price\": 150.0, \"quantity\": 5}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Dados inválidos fornecidos",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Dados inválidos fornecidos\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Produto não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Produto não encontrado\"}"
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<ProductResponseDTO> updateProduct(
+            @PathVariable Long productId,
+            @RequestBody @Valid ProductRequestDTO productRequestDTO
+    ) {
+        return ResponseEntity.ok(productService.updateProduct(productId, productRequestDTO));
+    }
+
+
+    @DeleteMapping("/{productId}")
+    @Operation(
+            summary = "Excluir um produto",
+            description = "Remove permanentemente um produto com base no ID fornecido."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Produto excluído com sucesso",
+                    content = @Content(
+                            mediaType = "application/json"
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Produto não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = "{\"message\": \"Produto não encontrado\"}"
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long productId) {
+        productService.deleteProduct(productId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
 

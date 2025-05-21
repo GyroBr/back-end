@@ -30,6 +30,18 @@ public class ProductService {
         return new ProductResponseDTO(productRepository.save(product));
     }
 
+    public ProductResponseDTO updateProduct(Long productId, ProductRequestDTO productRequestDTO) {
+        var product = existsProductById(productId);
+        var newProduct = new Product(productRequestDTO);
+        newProduct.setId(productId);
+        return new ProductResponseDTO(productRepository.save(newProduct));
+    }
+
+    public void deleteProduct(Long productId) {
+        var product = existsProductById(productId);
+        productRepository.delete(product);
+    }
+
     public List<ProductResponseDTO> getAllProductsByCompanyId(Company company) {
         return company.getProducts().stream()
                 .map(ProductResponseDTO::new)
@@ -50,7 +62,7 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    public List<String> getAllProductCategories(Company company){
+    public List<String> getAllProductCategories(Company company) {
         return company.getProducts().stream()
                 .map(Product::getCategory)
                 .distinct()
