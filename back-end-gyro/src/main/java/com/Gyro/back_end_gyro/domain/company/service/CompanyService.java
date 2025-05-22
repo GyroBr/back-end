@@ -40,6 +40,8 @@ public class CompanyService {
         var updateCompany = new Company(companyRequestDTO);
         var updaptedUser = userService.createUser(new UserRequestDTO(updateCompany.getName(), updateCompany.getEmail(), updateCompany.getPassword(), Roles.ROLE_ADMIN));
         updateCompany.setId(companyId);
+        updateCompany.setUser(updaptedUser);
+        updateCompany.setEmployees(company.getEmployees());
         updaptedUser.setId(user.getId());
         updateCompany.setUser(updaptedUser);
         return new CompanyResponseDTO(companyRepository.save(company));
