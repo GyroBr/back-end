@@ -33,7 +33,8 @@ public class ProductService {
     public ProductResponseDTO updateProduct(Long productId, ProductRequestDTO productRequestDTO) {
         var product = existsProductById(productId);
         var newProduct = new Product(productRequestDTO);
-        newProduct.setId(productId);
+        newProduct.setCompany(product.getCompany());
+        newProduct.setId(product.getId());
         return new ProductResponseDTO(productRepository.save(newProduct));
     }
 

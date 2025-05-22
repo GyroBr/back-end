@@ -16,7 +16,6 @@ public record ProductRequestDTO(
         @Positive
         Double price,
 
-        @NotBlank
         String volume,
 
         @NotNull
