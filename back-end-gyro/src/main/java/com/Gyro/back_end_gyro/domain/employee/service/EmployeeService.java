@@ -42,6 +42,8 @@ public class EmployeeService {
         var updatedUser = userService.createUser(new UserRequestDTO(updatedEmployee.getName(), updatedEmployee.getEmail(), updatedEmployee.getPassword(), Roles.ROLE_EMPLOYEE));
         updatedUser.setId(user.getId());
         updatedEmployee.setUser(updatedUser);
+        updatedUser.setCompany(employee.getCompany());
+        updatedEmployee.setCompany(employee.getCompany());
         return new EmployeeResponseDTO(employeeRepository.save(updatedEmployee));
 
     }
