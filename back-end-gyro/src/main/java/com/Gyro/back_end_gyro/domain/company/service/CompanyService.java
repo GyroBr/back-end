@@ -36,14 +36,9 @@ public class CompanyService {
 
     public CompanyResponseDTO updateCompany(Long companyId, CompanyRequestDTO companyRequestDTO) {
         var company = existsCompanyId(companyId);
-        var user = company.getUser();
-        var updateCompany = new Company(companyRequestDTO);
-        var updaptedUser = userService.createUser(new UserRequestDTO(updateCompany.getName(), updateCompany.getEmail(), updateCompany.getPassword(), Roles.ROLE_ADMIN));
-        updateCompany.setId(companyId);
-        updateCompany.setUser(updaptedUser);
-        updateCompany.setEmployees(company.getEmployees());
-        updaptedUser.setId(user.getId());
-        updateCompany.setUser(updaptedUser);
+        var newCompany = updateCompanyFactory(company, companyRequestDTO);
+        var newUser = userService.updateUser(company, newCompany, Roles.ROLE_ADMIN);
+        newCompany.setUser(newUser);
         return new CompanyResponseDTO(companyRepository.save(company));
 
     }
@@ -55,6 +50,16 @@ public class CompanyService {
 
     public Company existsCompanyId(Long companyId) {
         return companyRepository.findById(companyId).orElseThrow(() -> new NotFoundException("company not found"));
+    }
+
+    private Company updateCompanyFactory(Company company, CompanyRequestDTO companyRequestDTO) {
+        var newCompany = new Company(companyRequestDTO);
+        newCompany.setEmployees(company.getEmployees());
+        newCompany.setTotalRevenuOfSales(company.getTotalRevenuOfSales());
+        newCompany.setOrders(company.getOrders());
+        newCompany.setCombos(company.getCombos());
+        newCompany.setProducts(company.getProducts());
+        return newCompany;
     }
 
 

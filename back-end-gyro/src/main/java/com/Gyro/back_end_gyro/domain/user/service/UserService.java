@@ -1,5 +1,6 @@
 package com.Gyro.back_end_gyro.domain.user.service;
 
+import com.Gyro.back_end_gyro.domain.company.entity.Company;
 import com.Gyro.back_end_gyro.domain.employee.entity.Employee;
 import com.Gyro.back_end_gyro.domain.user.dto.UserRequestDTO;
 import com.Gyro.back_end_gyro.domain.user.entity.User;
@@ -54,6 +55,27 @@ public class UserService {
         user.setEmail(newEmployee.getEmail());
         user.setPassword(passwordEncoder.encode(newEmployee.getPassword()));
         user.setEmployee(newEmployee);
+        user.setRoles(role);
+
+        return userRepository.save(user);
+    }
+
+    public User updateUser(Company oldCompany, Company newCompany, Roles role) {
+        var user = oldCompany.getUser();
+
+        if (!Objects.equals(oldCompany.getEmail(), newCompany.getEmail())) {
+            User possibleUser = (User) userRepository.findUserByEmail(newCompany.getEmail())
+                    .orElse(null);
+
+            if (possibleUser != null) {
+                throw new ConflitException("Usuário ja cadastrado");
+            }
+        }
+
+        user.setName(newCompany.getName());
+        user.setEmail(newCompany.getEmail());
+        user.setPassword(passwordEncoder.encode(newCompany.getPassword()));
+        user.setCompany(newCompany);
         user.setRoles(role);
 
         return userRepository.save(user);
