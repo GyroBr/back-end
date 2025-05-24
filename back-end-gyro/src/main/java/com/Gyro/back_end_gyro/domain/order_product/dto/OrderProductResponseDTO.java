@@ -10,6 +10,6 @@ public record OrderProductResponseDTO(
 ) {
 
     public OrderProductResponseDTO(OrderProduct orderProduct){
-        this(new ProductResponseDTO(orderProduct.getProduct()),orderProduct.getQuantity(),orderProduct.getPriceAtPurchase());
+        this(new ProductResponseDTO(orderProduct.getProduct()),orderProduct.getOrderQuantity(),orderProduct.getPriceAtPurchase());
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,67 +20,78 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ImageService imageService;
 
-    public ProductResponseDTO createProduct(Company company, ProductRequestDTO productRequestDTO, MultipartFile imageFile) {
+    public ProductResponseDTO createProduct(Company company, ProductRequestDTO request, MultipartFile imageFile) {
         String imageUrl = imageService.saveImage(imageFile);
-        Product product = new Product(productRequestDTO);
-        product.setCompany(company);
-        product.setImage(imageUrl);
-
+        Product product = buildProductFromRequest(request, company, imageUrl);
         return new ProductResponseDTO(productRepository.save(product));
     }
 
-    public ProductResponseDTO updateProduct(Long productId, ProductRequestDTO productRequestDTO) {
-        var product = existsProductById(productId);
-        var newProduct = new Product(productRequestDTO);
-        newProduct.setCompany(product.getCompany());
-        newProduct.setId(product.getId());
-        return new ProductResponseDTO(productRepository.save(newProduct));
+    public ProductResponseDTO updateProduct(Long productId, ProductRequestDTO request) {
+        Product existingProduct = getProductByIdOrThrow(productId);
+        Product updatedProduct = updateProductFromRequest(existingProduct, request);
+        return new ProductResponseDTO(productRepository.save(updatedProduct));
     }
 
     public void deleteProduct(Long productId) {
-        var product = existsProductById(productId);
-        productRepository.delete(product);
+        productRepository.delete(getProductByIdOrThrow(productId));
     }
 
-    public List<ProductResponseDTO> getAllProductsByCompanyId(Company company) {
+    public List<ProductResponseDTO> getAllProductsByCompany(Company company) {
         return company.getProducts().stream()
                 .map(ProductResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public List<ProductResponseDTO> getTop10MostSellingProducts(Long companyId) {
-        return productRepository.findTopSellingProducts(companyId)
-                .stream()
+    public List<ProductResponseDTO> getTopSellingProducts(Long companyId) {
+        return productRepository.findTopSellingProducts(companyId).stream()
                 .map(ProductResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public List<ProductResponseDTO> getExiperedProducts(Long companyId) {
-        return productRepository.findByCompanyIdAndIsExpiredProductTrue(companyId)
-                .stream()
+    public List<ProductResponseDTO> getExpiredProducts(Long companyId) {
+        return productRepository.findByCompanyIdAndIsExpiredProductTrue(companyId).stream()
                 .map(ProductResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public List<String> getAllProductCategories(Company company) {
+    public List<String> getProductCategories(Company company) {
         return company.getProducts().stream()
                 .map(Product::getCategory)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<ProductResponseDTO> getOutOfStockProducts(Long companyId) {
-        return productRepository.findByCompanyIdAndIsOutOfStockTrue(companyId)
-                .stream()
+        return productRepository.findByCompanyIdAndIsOutOfStockTrue(companyId).stream()
                 .map(ProductResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public ProductResponseDTO getProductById(Long id) {
-        return new ProductResponseDTO(existsProductById(id));
+    public ProductResponseDTO getProductResponseById(Long id) {
+        return new ProductResponseDTO(getProductByIdOrThrow(id));
     }
 
-    public Product existsProductById(Long id) {
-        return productRepository.findById(id).orElseThrow(() -> new NotFoundException("Product not found"));
+    public Product getProductByIdOrThrow(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Produto não encontrado"));
+    }
+
+    public Product existsProductAndCompany(Long id, Company company) {
+        return productRepository.findByIdAndCompany(id, company)
+                .orElseThrow(() -> new NotFoundException("Produto não encontrado ou não pertence à empresa"));
+    }
+
+    private Product buildProductFromRequest(ProductRequestDTO request, Company company, String imageUrl) {
+        Product product = new Product(request);
+        product.setCompany(company);
+        product.setImage(imageUrl);
+        return product;
+    }
+
+    private Product updateProductFromRequest(Product existingProduct, ProductRequestDTO request) {
+        Product updatedProduct = new Product(request);
+        updatedProduct.setId(existingProduct.getId());
+        updatedProduct.setCompany(existingProduct.getCompany());
+        return updatedProduct;
     }
 }

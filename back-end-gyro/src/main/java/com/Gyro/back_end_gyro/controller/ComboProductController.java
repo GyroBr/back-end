@@ -5,8 +5,11 @@ import com.Gyro.back_end_gyro.domain.combo.service.ComboService;
 import com.Gyro.back_end_gyro.domain.combo_product.dto.ComboProductRequestDTO;
 import com.Gyro.back_end_gyro.domain.combo_product.dto.ComboProductResponseDTO;
 import com.Gyro.back_end_gyro.domain.combo_product.service.ComboProductService;
+import com.Gyro.back_end_gyro.domain.company.entity.Company;
+import com.Gyro.back_end_gyro.domain.company.service.CompanyService;
 import com.Gyro.back_end_gyro.domain.product.entity.Product;
 import com.Gyro.back_end_gyro.domain.product.service.ProductService;
+import com.Gyro.back_end_gyro.infra.security.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -17,10 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/combo-products")
@@ -31,6 +31,8 @@ public class ComboProductController {
     private final ComboProductService comboProductService;
     private final ProductService productService;
     private final ComboService comboService;
+    private final CompanyService companyService;
+    private final TokenService tokenService;
 
     @PostMapping
     @Operation(
@@ -71,9 +73,10 @@ public class ComboProductController {
             )
     })
     public ResponseEntity<ComboProductResponseDTO> create(
-            @RequestBody @Valid ComboProductRequestDTO requestDTO
+            @RequestBody @Valid ComboProductRequestDTO requestDTO, @RequestHeader("Authorization") String token
     ) {
-        Product product = productService.existsProductById(requestDTO.productId());
+        Company company = companyService.existsCompanyId(tokenService.getCompanyIdFromToken(token));
+        Product product = productService.existsProductAndCompany(requestDTO.productId(), company);
         Combo combo = comboService.existsComboById(requestDTO.comboId());
 
         return ResponseEntity.ok(comboProductService.create(combo, product, requestDTO.productQuantity()));

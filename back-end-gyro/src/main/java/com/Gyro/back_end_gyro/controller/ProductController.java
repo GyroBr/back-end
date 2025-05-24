@@ -7,14 +7,12 @@ import com.Gyro.back_end_gyro.domain.product.dto.ProductResponseDTO;
 import com.Gyro.back_end_gyro.domain.product.service.ProductService;
 import com.Gyro.back_end_gyro.infra.security.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,451 +29,97 @@ public class ProductController {
     private final TokenService tokenService;
     private final CompanyService companyService;
 
-    @PostMapping("/register")
-    @Operation(
-            summary = "Registrar um novo produto",
-            description = "Cria um novo produto associado a uma empresa. Requer autenticação via token JWT no cabeçalho e o envio de uma imagem."
-    )
+    @PostMapping
+    @Operation(summary = "Registrar um novo produto")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Produto registrado com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class),
-                            examples = @ExampleObject(
-                                    value = "{\"id\": 1, \"name\": \"Produto Exemplo\", \"description\": \"Descrição do produto\", \"price\": 100.0, \"quantity\": 10}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Requisição inválida",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Dados inválidos fornecidos\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Não autorizado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
+            @ApiResponse(responseCode = "201", description = "Produto criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autorizado")
     })
-    public ResponseEntity<ProductResponseDTO> createProduct(
-            @RequestHeader("Authorization") String tokenIssuer,
-            @RequestPart("product") @Valid ProductRequestDTO productRequestDTO,
-            @RequestPart("image") MultipartFile imageFile
-    ) {
-        Long companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
-        return ResponseEntity.ok(productService.createProduct(companyService.existsCompanyId(companyId), productRequestDTO, imageFile));
+    public ResponseEntity<ProductResponseDTO> create(
+            @RequestHeader("Authorization") String token,
+            @RequestPart("product") @Valid ProductRequestDTO request,
+            @RequestPart("image") MultipartFile image) {
+
+        Company company = getCompanyFromToken(token);
+        ProductResponseDTO response = productService.createProduct(company, request, image);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/top-products")
-    @Operation(
-            summary = "Obter os produtos mais vendidos",
-            description = "Retorna uma lista dos 10 produtos mais vendidos da empresa associada ao token JWT fornecido no cabeçalho."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de produtos mais vendidos retornada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class, type = "array"),
-                            examples = @ExampleObject(
-                                    value = "[{\"id\": 1, \"name\": \"Produto Exemplo\", \"description\": \"Descrição do produto\", \"price\": 100.0, \"quantity\": 10}]"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Nenhum produto encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Não autorizado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
-    })
-    public ResponseEntity<List<ProductResponseDTO>> getMostSallers(
-            @RequestHeader("Authorization") String tokenIssuer
-    ) {
-        Long companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
-        List<ProductResponseDTO> mostSaller = productService.getTop10MostSellingProducts(companyId);
+    @GetMapping("/top-selling")
+    @Operation(summary = "Obter os produtos mais vendidos")
+    public ResponseEntity<List<ProductResponseDTO>> getTopSellingProducts(
+            @RequestHeader("Authorization") String token) {
 
-        if (mostSaller.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(mostSaller);
+        Company company = getCompanyFromToken(token);
+        List<ProductResponseDTO> products = productService.getTopSellingProducts(company.getId());
+        return buildListResponse(products);
     }
 
-    @GetMapping("/get-expired-products")
-    @Operation(
-            summary = "Obter produtos expirados",
-            description = "Retorna uma lista de produtos expirados da empresa associada ao token JWT fornecido no cabeçalho."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de produtos expirados retornada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class, type = "array"),
-                            examples = @ExampleObject(
-                                    value = "[{\"id\": 1, \"name\": \"Produto Exemplo\", \"description\": \"Descrição do produto\", \"price\": 100.0, \"quantity\": 10}]"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Nenhum produto expirado encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Não autorizado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
-    })
+    @GetMapping("/expired")
+    @Operation(summary = "Obter produtos expirados")
     public ResponseEntity<List<ProductResponseDTO>> getExpiredProducts(
-            @RequestHeader("Authorization") String tokenIssuer
-    ) {
-        Long companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
-        List<ProductResponseDTO> expiredProducts = productService.getExiperedProducts(companyId);
+            @RequestHeader("Authorization") String token) {
 
-        if (expiredProducts.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(expiredProducts);
+        Company company = getCompanyFromToken(token);
+        return buildListResponse(productService.getExpiredProducts(company.getId()));
     }
 
-    @GetMapping("/get-out-of-stock-products")
-    @Operation(
-            summary = "Obter produtos fora de estoque",
-            description = "Retorna uma lista de produtos fora de estoque da empresa associada ao token JWT fornecido no cabeçalho."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de produtos fora de estoque retornada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class, type = "array"),
-                            examples = @ExampleObject(
-                                    value = "[{\"id\": 1, \"name\": \"Produto Exemplo\", \"description\": \"Descrição do produto\", \"price\": 100.0, \"quantity\": 0}]"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Nenhum produto fora de estoque encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Não autorizado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
-    })
+    @GetMapping("/out-of-stock")
+    @Operation(summary = "Obter produtos fora de estoque")
     public ResponseEntity<List<ProductResponseDTO>> getOutOfStockProducts(
-            @RequestHeader("Authorization") String tokenIssuer
-    ) {
-        Long companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
-        List<ProductResponseDTO> outOfStockProducts = productService.getOutOfStockProducts(companyId);
+            @RequestHeader("Authorization") String token) {
 
-        if (outOfStockProducts.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(outOfStockProducts);
+        Company company = getCompanyFromToken(token);
+        return buildListResponse(productService.getOutOfStockProducts(company.getId()));
     }
 
+    @GetMapping
+    @Operation(summary = "Obter todos os produtos da empresa")
+    public ResponseEntity<List<ProductResponseDTO>> getAllByCompany(
+            @RequestHeader("Authorization") String token) {
 
-    @GetMapping("/get-all-by-company")
-    @Operation(
-            summary = "Obter todos os produtos de uma empresa",
-            description = "Retorna uma lista de todos os produtos associados à empresa do token JWT fornecido no cabeçalho."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Lista de produtos retornada com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class, type = "array"),
-                            examples = @ExampleObject(
-                                    value = "[{\"id\": 1, \"name\": \"Produto Exemplo\", \"description\": \"Descrição do produto\", \"price\": 100.0, \"quantity\": 10}]"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Nenhum produto encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Não autorizado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token JWT inválido ou ausente\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
-    })
-    public ResponseEntity<List<ProductResponseDTO>> getAllByCompanyId(
-            @RequestHeader("Authorization") String tokenIssuer
-    ) {
-        var companyId = tokenService.getCompanyIdFromToken(tokenIssuer);
-        var company = companyService.existsCompanyId(companyId);
-        var products = productService.getAllProductsByCompanyId(company);
-
-        if (products.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(products);
+        Company company = getCompanyFromToken(token);
+        return buildListResponse(productService.getAllProductsByCompany(company));
     }
 
-    @GetMapping("/get-categories")
-    @Operation(
-            summary = "Obtém todas as categorias de produtos de uma empresa",
-            description = "Retorna uma lista de categorias de produtos associadas à empresa do usuário autenticado. " +
-                    "O token JWT no cabeçalho 'Authorization' é usado para identificar a empresa."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Categorias retornadas com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = List.class, type = "array", example = "[\"Eletrônicos\", \"Roupas\", \"Alimentos\"]")
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Nenhuma categoria encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "[]"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Token inválido ou não fornecido",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Token inválido ou não fornecido\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Acesso negado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Acesso negado\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Empresa não encontrada",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Empresa não encontrada\"}"
-                            )
-                    )
-            )
-    })
-    public ResponseEntity<List<String>> getCategories(@RequestHeader("Authorization") String tokenIssuer) {
-        Company company = companyService.existsCompanyId(tokenService.getCompanyIdFromToken(tokenIssuer));
+    @GetMapping("/categories")
+    @Operation(summary = "Obter categorias de produtos")
+    public ResponseEntity<List<String>> getCategories(
+            @RequestHeader("Authorization") String token) {
 
-        List<String> categories = productService.getAllProductCategories(company);
-
-        if (categories.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(categories);
+        Company company = getCompanyFromToken(token);
+        return buildListResponse(productService.getProductCategories(company));
     }
 
-    @PutMapping("/{productId}")
-    @Operation(
-            summary = "Atualizar um produto existente",
-            description = "Atualiza as informações de um produto com base no ID fornecido. Requer um corpo com os dados do produto a ser atualizado."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Produto atualizado com sucesso",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProductResponseDTO.class),
-                            examples = @ExampleObject(
-                                    value = "{\"id\": 1, \"name\": \"Produto Atualizado\", \"description\": \"Nova descrição\", \"price\": 150.0, \"quantity\": 5}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Dados inválidos fornecidos",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Dados inválidos fornecidos\"}"
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Produto não encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Produto não encontrado\"}"
-                            )
-                    )
-            )
-    })
-    public ResponseEntity<ProductResponseDTO> updateProduct(
-            @PathVariable Long productId,
-            @RequestBody @Valid ProductRequestDTO productRequestDTO
-    ) {
-        return ResponseEntity.ok(productService.updateProduct(productId, productRequestDTO));
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar um produto")
+    public ResponseEntity<ProductResponseDTO> update(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token,
+            @RequestBody @Valid ProductRequestDTO request) {
+
+        getCompanyFromToken(token);
+        return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Remover um produto")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token) {
 
-    @DeleteMapping("/{productId}")
-    @Operation(
-            summary = "Excluir um produto",
-            description = "Remove permanentemente um produto com base no ID fornecido."
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Produto excluído com sucesso",
-                    content = @Content(
-                            mediaType = "application/json"
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Produto não encontrado",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = "{\"message\": \"Produto não encontrado\"}"
-                            )
-                    )
-            )
-    })
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long productId) {
-        productService.deleteProduct(productId);
+        getCompanyFromToken(token);
+        productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
 
-}
+    private Company getCompanyFromToken(String token) {
+        Long companyId = tokenService.getCompanyIdFromToken(token);
+        return companyService.existsCompanyId(companyId);
+    }
 
+    private <T> ResponseEntity<List<T>> buildListResponse(List<T> list) {
+        return list.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(list);
+    }
+}

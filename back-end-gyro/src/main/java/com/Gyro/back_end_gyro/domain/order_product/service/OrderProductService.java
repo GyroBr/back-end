@@ -22,118 +22,139 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderProductService {
 
-
     private final OrderService orderService;
     private final ProductService productService;
-
     private final OrderProductRepository orderProductRepository;
 
     public OrderProductResponseDTO create(Long orderId, Long productId, Integer orderQuantity) {
+        Order order = orderService.existsOrderById(orderId);
+        Product product = productService.existsProductAndCompany(productId,order.getCompany());
 
-        var order = orderService.existsOrderById(orderId);
-        var product = productService.existsProductById(productId);
+        validateProductCompany(order, product);
+        validateStock(product, orderQuantity);
 
-        thisIsAPossibleTransaction(product, orderQuantity);
-
-        OrderProduct orderProduct = new OrderProduct(
-                null,
-                product,
-                order,
-                orderQuantity,
-                product.getPrice() * orderQuantity);
-
-        order.getOrderProducts().add(orderProduct);
-
-        order.setPurchaseTotal(BigDecimal.valueOf(order.getOrderProducts().stream()
-                        .mapToDouble(OrderProduct::getPriceAtPurchase)
-                        .sum())
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue());
-
-
-        order.setProductQuantity(order.getProductQuantity() + orderQuantity);
-        calculatorTransactionChangeOrNo(order);
-        calculatorTotalOfSalesAndRevenueForEmployee(order);
-        calculatorCompanyTotalRevenue(order);
-
+        OrderProduct orderProduct = createOrderProduct(order, product, orderQuantity);
+        updateOrderDetails(order, orderProduct);
+        updateFinancialMetrics(order);
 
         return new OrderProductResponseDTO(orderProductRepository.save(orderProduct));
-
-
     }
 
+    private void validateProductCompany(Order order, Product product) {
+        if (!product.getCompany().getId().equals(order.getCompany().getId())) {
+            throw new ConflitException("Produto não pertence à empresa do pedido");
+        }
+    }
 
-    private void thisIsAPossibleTransaction(Product product, Integer orderQuantity) {
-
+    private void validateStock(Product product, Integer orderQuantity) {
         if (product.getQuantity() < orderQuantity) {
-            throw new ConflitException
-                    ("A quantidade do produto %s impossibilita a conclusão da venda".formatted(product.getName())
-                    );
+            throw new ConflitException(
+                    "Quantidade insuficiente do produto %s".formatted(product.getName())
+            );
         }
-
-        product.setQuantity(product.getQuantity() - orderQuantity);
-
-
-        product.setTotalSales(product.getTotalSales() + orderQuantity);
-
     }
 
+    private OrderProduct createOrderProduct(Order order, Product product, Integer quantity) {
+        double totalPrice = calculateTotalPrice(product.getPrice(), quantity);
 
-    private void calculatorTransactionChangeOrNo(Order order) {
+        return OrderProduct.builder()
+                .product(product)
+                .order(order)
+                .orderQuantity(quantity)
+                .priceAtPurchase(totalPrice)
+                .build();
+    }
 
+    private double calculateTotalPrice(Double unitPrice, Integer quantity) {
+        return BigDecimal.valueOf(unitPrice * quantity)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private void updateOrderDetails(Order order, OrderProduct orderProduct) {
+        order.getOrderProducts().add(orderProduct);
+        order.setProductQuantity(order.getProductQuantity() + orderProduct.getOrderQuantity());
+        order.setPurchaseTotal(calculateOrderTotal(order));
+    }
+
+    private double calculateOrderTotal(Order order) {
+        return order.getOrderProducts().stream()
+                .mapToDouble(OrderProduct::getPriceAtPurchase)
+                .sum();
+    }
+
+    private void updateFinancialMetrics(Order order) {
+        updateProductStock(order);
+        calculateTransactionChange(order);
+        updateEmployeeSalesMetrics(order);
+        updateCompanyRevenue(order);
+    }
+
+    private void updateProductStock(Order order) {
+        order.getOrderProducts().forEach(op -> {
+            Product product = op.getProduct();
+            product.setQuantity(product.getQuantity() - op.getOrderQuantity());
+            product.setTotalSales(product.getTotalSales() + op.getOrderQuantity());
+        });
+    }
+
+    private void calculateTransactionChange(Order order) {
         if (order.getPaymentMethod() == PaymentMethod.CASH) {
-            if (order.getCashForPayment() == order.getPurchaseTotal()) {
-                order.setChange(order.getCashForPayment() - order.getPurchaseTotal());
-                order.setHaveAChange(false);
-            } else if (order.getCashForPayment() < order.getPurchaseTotal()) {
-                throw new ConflitException("Dinheiro insuficiente");
-            } else {
-                order.setChange(order.getCashForPayment() - order.getPurchaseTotal());
-                order.setHaveAChange(true);
-            }
+            handleCashPayment(order);
         } else {
-            order.setHaveAChange(false);
-            order.setChange(0.0);
-            order.setCashForPayment(0.0);
+            resetNonCashPaymentFields(order);
         }
     }
 
-    private void calculatorTotalOfSalesAndRevenueForEmployee(Order order) {
+    private void handleCashPayment(Order order) {
+        double difference = order.getCashForPayment() - order.getPurchaseTotal();
 
+        if (difference < 0) {
+            throw new ConflitException("Dinheiro insuficiente");
+        }
+
+        order.setChange(Math.abs(difference));
+        order.setHaveAChange(difference > 0);
+    }
+
+    private void resetNonCashPaymentFields(Order order) {
+        order.setHaveAChange(false);
+        order.setChange(0.0);
+        order.setCashForPayment(0.0);
+    }
+
+    private void updateEmployeeSalesMetrics(Order order) {
         Employee employee = order.getEmployee();
+        List<Order> employeeOrders = filterOrdersByEmployee(order.getCompany().getOrders(), employee);
 
-        Integer employeeSales = employee.getTotalSales();
+        double totalRevenue = calculateTotalRevenue(employeeOrders);
+        int totalSales = calculateTotalSales(employeeOrders);
 
-        List<Order> orders = order.getCompany().getOrders();
-        Double totalRevenueOfEmployee = 0.0;
-
-        for (Order oIndex : orders) {
-            if (oIndex.getEmployee().equals(employee)) {
-                System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + oIndex.getPurchaseTotal());
-                totalRevenueOfEmployee += oIndex.getPurchaseTotal();
-
-                if (oIndex.getOrderProducts().size() == 1) {
-                    employeeSales++;
-                }
-
-            }
-        }
-
-        employee.setTotalRevenue(totalRevenueOfEmployee);
-        employee.setTotalSales(employeeSales);
+        employee.setTotalRevenue(totalRevenue);
+        employee.setTotalSales(totalSales);
     }
 
+    private List<Order> filterOrdersByEmployee(List<Order> orders, Employee employee) {
+        return orders.stream()
+                .filter(o -> o.getEmployee().equals(employee))
+                .toList();
+    }
 
-    private void calculatorCompanyTotalRevenue(Order order) {
+    private double calculateTotalRevenue(List<Order> orders) {
+        return orders.stream()
+                .mapToDouble(Order::getPurchaseTotal)
+                .sum();
+    }
+
+    private int calculateTotalSales(List<Order> orders) {
+        return (int) orders.stream()
+                .flatMap(o -> o.getOrderProducts().stream())
+                .count();
+    }
+
+    private void updateCompanyRevenue(Order order) {
         Company company = order.getCompany();
-        List<Order> orders = company.getOrders();
-        Double sumOfTotalRevenue = 0.0;
-
-        for (Order oIndex : orders) {
-            sumOfTotalRevenue += oIndex.getPurchaseTotal();
-
-        }
-
-        company.setTotalRevenuOfSales(sumOfTotalRevenue);
+        double totalRevenue = calculateTotalRevenue(company.getOrders());
+        company.setTotalRevenuOfSales(totalRevenue);
     }
 }

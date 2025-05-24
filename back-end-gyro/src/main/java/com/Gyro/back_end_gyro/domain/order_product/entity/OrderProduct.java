@@ -3,10 +3,7 @@ package com.Gyro.back_end_gyro.domain.order_product.entity;
 import com.Gyro.back_end_gyro.domain.order.entity.Order;
 import com.Gyro.back_end_gyro.domain.product.entity.Product;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity(name = "table_order_product")
 @Table(name = "table_order_product")
@@ -14,6 +11,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class OrderProduct {
 
     @Id
@@ -26,7 +24,7 @@ public class OrderProduct {
     @ManyToOne
     private Order order;
 
-    private Integer quantity;
+    private Integer orderQuantity;
 
     private Double priceAtPurchase;
 
