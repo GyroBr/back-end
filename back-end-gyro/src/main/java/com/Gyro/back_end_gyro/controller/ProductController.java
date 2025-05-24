@@ -29,7 +29,7 @@ public class ProductController {
     private final TokenService tokenService;
     private final CompanyService companyService;
 
-    @PostMapping
+    @PostMapping("/register")
     @Operation(summary = "Registrar um novo produto")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Produto criado com sucesso"),
