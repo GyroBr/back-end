@@ -39,7 +39,7 @@ public class Order {
 
     private LocalDateTime createdAt;
 
-    private Integer productQuantity = 0;
+    private Integer productQuantity;
 
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
@@ -62,11 +62,9 @@ public class Order {
         this.company = employee.getCompany();
         this.createdAt = LocalDateTime.now();
         this.paymentMethod = requestDTO.paymentMethod();
-
-        if (cashForPayment == null) {
-            this.cashForPayment = 0.0;
-        }
-        this.cashForPayment = requestDTO.cashForPayment();
+        this.haveAChange = false;
+        this.productQuantity = 0;
+        this.cashForPayment = requestDTO.cashForPayment() == null ? 0 : requestDTO.cashForPayment();
         this.purchaseTotal = 0.0;
         this.change = 0.0;
     }

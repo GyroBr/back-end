@@ -23,11 +23,12 @@ public class OrderService {
 
 
     public OrderResponseDTO createOrder(Employee employee, OrderRequestDTO orderRequestDTO) {
-        Order order = new Order(employee, orderRequestDTO);
 
         if (orderRequestDTO.paymentMethod() != PaymentMethod.CASH && orderRequestDTO.cashForPayment() != null) {
             throw new ConflitException("Passe o valor de pagamento registrado pelo cliente apenas em caso do método de pagamento ser dinheiro");
         }
+
+        Order order = new Order(employee, orderRequestDTO);
 
         return new OrderResponseDTO(orderRepository.save(order));
     }

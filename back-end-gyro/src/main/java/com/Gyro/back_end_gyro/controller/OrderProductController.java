@@ -73,8 +73,7 @@ public class OrderProductController {
     public ResponseEntity<OrderProductResponseDTO> createOrderProduct(
             @RequestBody @Valid OrderProductRequestDTO orderProductRequestDTO
     ) {
-        Order order = orderService.existsOrderById(orderProductRequestDTO.orderId());
-        Product product = productService.existsProductById(orderProductRequestDTO.productId());
-        return ResponseEntity.ok(orderProductService.create(order, product, orderProductRequestDTO.orderQuantity()));
+
+        return ResponseEntity.ok(orderProductService.create(orderProductRequestDTO.orderId(), orderProductRequestDTO.productId(), orderProductRequestDTO.orderQuantity()));
     }
 }
