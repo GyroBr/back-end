@@ -28,8 +28,8 @@ public class Employee {
     private String name;
     private String email;
     private String password;
-    private Integer totalSales = 0;
-    private Double totalRevenue = 0.0;
+    private Integer totalSales;
+    private Double totalRevenue;
 
     @OneToOne
     private User user;
@@ -46,5 +46,7 @@ public class Employee {
         this.name = requestDTO.name();
         this.email = requestDTO.email();
         this.password = requestDTO.password();
+        this.totalSales = 0;
+        this.totalRevenue = 0.0;
     }
 }
