@@ -66,6 +66,8 @@ public class Order {
             this.cashForPayment = 0.0;
         }
         this.cashForPayment = requestDTO.cashForPayment();
+        this.purchaseTotal = 0.0;
+        this.change = 0.0;
     }
 
 
