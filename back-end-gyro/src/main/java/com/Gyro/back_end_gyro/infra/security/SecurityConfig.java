@@ -55,6 +55,7 @@ public class SecurityConfig {
                     req.requestMatchers("/order-products/**").hasRole("EMPLOYEE");
                     req.requestMatchers("/employees/delete-employee/").hasRole("ADMIN");
                     req.requestMatchers("/employees/update-employee/").hasRole("ADMIN");
+                    req.requestMatchers("/employees/register/").hasRole("ADMIN");
                     req.anyRequest().hasAnyRole("ADMIN", "EMPLOYEE");
                 }).addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

@@ -35,17 +35,11 @@ public class EmployeeService {
     }
 
     public EmployeeResponseDTO updateEmployee(Long employeeId, EmployeeRequestDTO requestDTO) {
-        var employee = existsEmployeeById(employeeId);
-        var user = employee.getUser();
-        var updatedEmployee = new Employee(requestDTO);
-        updatedEmployee.setId(employeeId);
-        var updatedUser = userService.createUser(new UserRequestDTO(updatedEmployee.getName(), updatedEmployee.getEmail(), updatedEmployee.getPassword(), Roles.ROLE_EMPLOYEE));
-        updatedUser.setId(user.getId());
-        updatedEmployee.setUser(updatedUser);
-        updatedUser.setCompany(employee.getCompany());
-        updatedEmployee.setCompany(employee.getCompany());
-        return new EmployeeResponseDTO(employeeRepository.save(updatedEmployee));
-
+        var oldEmployee = existsEmployeeById(employeeId);
+        var newEmployee = updateEmployeeFactory(oldEmployee, requestDTO);
+        var updatedUserEmployee = userService.updateUser(oldEmployee, newEmployee, Roles.ROLE_EMPLOYEE);
+        newEmployee.setUser(updatedUserEmployee);
+        return new EmployeeResponseDTO(employeeRepository.save(newEmployee));
     }
 
     public void deleteEmployee(Long employeeId) {
@@ -68,6 +62,16 @@ public class EmployeeService {
 
     public Employee existsEmployeeById(Long employeeId) {
         return employeeRepository.findById(employeeId).orElseThrow(() -> new NotFoundException("Employee not found"));
+    }
+
+
+    private Employee updateEmployeeFactory(Employee employee, EmployeeRequestDTO requestDTO) {
+        var updatedEmployee = new Employee(requestDTO);
+        updatedEmployee.setTotalRevenue(employee.getTotalRevenue());
+        updatedEmployee.setTotalSales(employee.getTotalSales());
+        updatedEmployee.setCompany(employee.getCompany());
+        updatedEmployee.setId(employee.getId());
+        return updatedEmployee;
     }
 
 }
