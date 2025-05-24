@@ -99,7 +99,7 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.getCompanyById(tokenService.getCompanyIdFromToken(tokenIssuer)));
     }
 
-    @PutMapping
+    @PutMapping("/update-company")
     @Operation(
             summary = "Atualizar dados da empresa",
             description = "Atualiza os dados da empresa associada ao token JWT fornecido no cabeçalho."

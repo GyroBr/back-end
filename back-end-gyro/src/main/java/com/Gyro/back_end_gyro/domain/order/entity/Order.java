@@ -61,7 +61,10 @@ public class Order {
         this.employee = employee;
         this.company = employee.getCompany();
         this.createdAt = LocalDateTime.now();
-        this.paymentMethod = requestDTO.paymentMethod();
+
+        if (cashForPayment == null) {
+            this.cashForPayment = 0.0;
+        }
         this.cashForPayment = requestDTO.cashForPayment();
     }
 
