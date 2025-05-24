@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -38,10 +39,23 @@ public class UserService {
     }
 
     public User updateUser(Employee oldEmployee, Employee newEmployee, Roles role) {
-        var oldUser = oldEmployee.getUser();
-        var newUser = createUser(new UserRequestDTO(newEmployee.getName(), newEmployee.getEmail(), newEmployee.getPassword(), role));
-        newUser.setId(oldUser.getId());
-        return newUser;
+        var user = oldEmployee.getUser();
+
+        if (!Objects.equals(oldEmployee.getEmail(), newEmployee.getEmail())) {
+            User possibleUser = (User) userRepository.findUserByEmail(newEmployee.getEmail())
+                    .orElse(null);
+
+            if (possibleUser != null) {
+                throw new ConflitException("Usuário ja cadastrado");
+            }
+        }
+
+        user.setName(newEmployee.getName());
+        user.setEmail(newEmployee.getEmail());
+        user.setPassword(passwordEncoder.encode(newEmployee.getPassword()));
+        user.setRoles(role);
+
+        return userRepository.save(user);
     }
 
 
