@@ -44,7 +44,7 @@ public class SecurityConfig {
                             "/auths/login",
                             "/companies/register",
                             "/externals/{cep}",
-                            "/v3/api-docs/**",
+                            "/api/v3/api-docs/**",
                             "/swagger-ui/**",
                             "/swagger-ui.html"
                     ).permitAll();
