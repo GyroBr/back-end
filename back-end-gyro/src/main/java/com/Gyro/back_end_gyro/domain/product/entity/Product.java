@@ -61,6 +61,8 @@ public class Product {
         this.barCode = productRequestDTO.barCode();
         this.category = replateToUpper(productRequestDTO.category());
         this.isSendedToEmail = false;
+        this.isOutOfStock = false;
+        this.isExpiredProduct = false;
     }
 
     private String replateToUpper(String category) {
