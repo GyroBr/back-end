@@ -9,7 +9,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -22,31 +23,31 @@ public class ProductScheduleService {
 
     @Scheduled(fixedRate = 30000)
     public void handleExpiredProducts() {
-        log.info("[Produtos Vencidos] Iniciando verificação de produtos vencidos...");
+        log.info("[Produtos Vencidos] Iniciando verificação...");
 
         try {
-            List<Product> productsToCheck = productRepository.findAll()
-                    .stream()
-                    .filter(p -> !p.getIsExpiredProduct() || !p.getIsSendedToEmail())
-                    .toList();
+            // 1. Encontra produtos que venceram mas não foram marcados como expirados
+            List<Product> newlyExpired = productRepository
+                    .findByExpiresAtBeforeAndIsExpiredProductFalse(LocalDate.now());
 
-            log.info("[Produtos Vencidos] {} produtos para verificar", productsToCheck.size());
+            // 2. Marca como expirados
+            newlyExpired.forEach(p -> {
+                p.setIsExpiredProduct(true);
+                p.setIsSendedToEmail(false);
+            });
+            productRepository.saveAll(newlyExpired);
 
-            Map<String, List<Product>> expiredProductsByEmail = productsToCheck.stream()
-                    .filter(p -> LocalDate.now().isAfter(p.getExpiresAt()))
-                    .peek(p -> {
-                        p.setIsExpiredProduct(true);
-                        p.setIsSendedToEmail(false);
-                        productRepository.save(p);
-                    })
+            // 3. Busca produtos expirados não notificados
+            List<Product> expiredToNotify = productRepository
+                    .findByIsExpiredProductTrueAndIsSendedToEmailFalse();
+
+            // 4. Agrupa por empresa e envia emails
+            Map<String, List<Product>> expiredByEmail = expiredToNotify.stream()
                     .collect(Collectors.groupingBy(
-                            p -> p.getCompany().getEmail(),
-                            Collectors.toList()
+                            p -> p.getCompany().getEmail()
                     ));
 
-            log.info("[Produtos Vencidos] {} empresas com produtos vencidos", expiredProductsByEmail.size());
-
-            expiredProductsByEmail.forEach((email, products) -> {
+            expiredByEmail.forEach((email, products) -> {
                 try {
                     emailService.sendEmail(
                             email,
@@ -54,54 +55,50 @@ public class ProductScheduleService {
                             buildExpiredProductsMessage(products)
                     );
 
-                    products.forEach(p -> {
-                        p.setIsSendedToEmail(true);
-                        productRepository.save(p);
-                    });
+                    products.forEach(p -> p.setIsSendedToEmail(true));
+                    productRepository.saveAll(products);
 
-                    log.info("Notificação enviada para {} sobre {} produtos vencidos", email, products.size());
+                    log.info("Notificação enviada para {}: {} produtos", email, products.size());
                 } catch (Exception e) {
                     log.error("Falha ao enviar email para {}: {}", email, e.getMessage());
                 }
             });
 
         } catch (Exception e) {
-            log.error("Erro durante verificação de produtos vencidos: {}", e.getMessage(), e);
+            log.error("Erro na verificação de produtos vencidos: {}", e.getMessage(), e);
         }
     }
 
     @Scheduled(fixedRate = 30000)
     public void handleOutOfStockProducts() {
-        log.info("[Estoque Baixo] Iniciando verificação de produtos com estoque baixo...");
+        log.info("[Estoque Baixo] Iniciando verificação...");
 
         try {
-            List<Product> productsToCheck = productRepository.findAll()
+            // 1. Encontra o menor warningQuantity
+            Integer minWarning = productRepository.findAll()
                     .stream()
-                    .filter(p -> !p.getIsOutOfStock() || !p.getIsSendedToEmail())
-                    .toList();
-
-            log.info("[Estoque Baixo] {} produtos para verificar", productsToCheck.size());
-
-            int minWarning = productsToCheck.stream()
                     .mapToInt(Product::getWarningQuantity)
                     .min()
                     .orElse(0);
 
-            Map<String, List<Product>> outOfStockProductsByEmail = productsToCheck.stream()
-                    .filter(p -> p.getQuantity() <= minWarning)
-                    .peek(p -> {
-                        p.setIsOutOfStock(true);
-                        p.setIsSendedToEmail(false);
-                        productRepository.save(p);
-                    })
+            List<Product> newlyOutOfStock = productRepository
+                    .findByQuantityLessThanEqualAndIsOutOfStockFalse(minWarning);
+
+            newlyOutOfStock.forEach(p -> {
+                p.setIsOutOfStock(true);
+                p.setIsSendedToEmail(false);
+            });
+            productRepository.saveAll(newlyOutOfStock);
+
+            List<Product> outOfStockToNotify = productRepository
+                    .findByIsOutOfStockTrueAndIsSendedToEmailFalse();
+
+            Map<String, List<Product>> outOfStockByEmail = outOfStockToNotify.stream()
                     .collect(Collectors.groupingBy(
-                            p -> p.getCompany().getEmail(),
-                            Collectors.toList()
+                            p -> p.getCompany().getEmail()
                     ));
 
-            log.info("[Estoque Baixo] {} empresas com produtos em estoque baixo", outOfStockProductsByEmail.size());
-
-            outOfStockProductsByEmail.forEach((email, products) -> {
+            outOfStockByEmail.forEach((email, products) -> {
                 try {
                     emailService.sendEmail(
                             email,
@@ -109,19 +106,17 @@ public class ProductScheduleService {
                             buildOutOfStockMessage(products)
                     );
 
-                    products.forEach(p -> {
-                        p.setIsSendedToEmail(true);
-                        productRepository.save(p);
-                    });
+                    products.forEach(p -> p.setIsSendedToEmail(true));
+                    productRepository.saveAll(products);
 
-                    log.info("Notificação enviada para {} sobre {} produtos com estoque baixo", email, products.size());
+                    log.info("Notificação enviada para {}: {} produtos", email, products.size());
                 } catch (Exception e) {
                     log.error("Falha ao enviar email para {}: {}", email, e.getMessage());
                 }
             });
 
         } catch (Exception e) {
-            log.error("Erro durante verificação de estoque baixo: {}", e.getMessage(), e);
+            log.error("Erro na verificação de estoque baixo: {}", e.getMessage(), e);
         }
     }
 

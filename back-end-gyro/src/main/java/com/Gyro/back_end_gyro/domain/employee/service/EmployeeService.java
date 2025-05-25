@@ -71,6 +71,7 @@ public class EmployeeService {
         updatedEmployee.setTotalRevenue(employee.getTotalRevenue());
         updatedEmployee.setTotalSales(employee.getTotalSales());
         updatedEmployee.setCompany(employee.getCompany());
+        updatedEmployee.setOrders(employee.getOrders());
         updatedEmployee.setId(employee.getId());
         return updatedEmployee;
     }
