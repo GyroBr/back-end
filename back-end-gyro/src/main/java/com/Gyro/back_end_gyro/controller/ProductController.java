@@ -43,7 +43,7 @@ public class ProductController {
 
         Company company = getCompanyFromToken(token);
         ProductResponseDTO response = productService.createProduct(company, request, image);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/top-products")
