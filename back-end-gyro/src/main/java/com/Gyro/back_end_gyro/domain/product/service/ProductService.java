@@ -92,6 +92,9 @@ public class ProductService {
         Product updatedProduct = new Product(request);
         updatedProduct.setId(existingProduct.getId());
         updatedProduct.setCompany(existingProduct.getCompany());
+        updatedProduct.setTotalSales(existingProduct.getTotalSales());
+        updatedProduct.setComboProducts(existingProduct.getComboProducts());
+        updatedProduct.setOrderProducts(existingProduct.getOrderProducts());
         return updatedProduct;
     }
 }

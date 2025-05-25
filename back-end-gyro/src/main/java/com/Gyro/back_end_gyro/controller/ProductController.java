@@ -46,7 +46,7 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/top-selling")
+    @GetMapping("/top-products")
     @Operation(summary = "Obter os produtos mais vendidos")
     public ResponseEntity<List<ProductResponseDTO>> getTopSellingProducts(
             @RequestHeader("Authorization") String token) {
@@ -56,7 +56,7 @@ public class ProductController {
         return buildListResponse(products);
     }
 
-    @GetMapping("/expired")
+    @GetMapping("/get-expired-products")
     @Operation(summary = "Obter produtos expirados")
     public ResponseEntity<List<ProductResponseDTO>> getExpiredProducts(
             @RequestHeader("Authorization") String token) {
@@ -65,7 +65,7 @@ public class ProductController {
         return buildListResponse(productService.getExpiredProducts(company.getId()));
     }
 
-    @GetMapping("/out-of-stock")
+    @GetMapping("/get-out-of-stock-products")
     @Operation(summary = "Obter produtos fora de estoque")
     public ResponseEntity<List<ProductResponseDTO>> getOutOfStockProducts(
             @RequestHeader("Authorization") String token) {
@@ -74,7 +74,7 @@ public class ProductController {
         return buildListResponse(productService.getOutOfStockProducts(company.getId()));
     }
 
-    @GetMapping
+    @GetMapping("/get-all-by-company")
     @Operation(summary = "Obter todos os produtos da empresa")
     public ResponseEntity<List<ProductResponseDTO>> getAllByCompany(
             @RequestHeader("Authorization") String token) {
@@ -83,7 +83,7 @@ public class ProductController {
         return buildListResponse(productService.getAllProductsByCompany(company));
     }
 
-    @GetMapping("/categories")
+    @GetMapping("/get-categories")
     @Operation(summary = "Obter categorias de produtos")
     public ResponseEntity<List<String>> getCategories(
             @RequestHeader("Authorization") String token) {
@@ -92,7 +92,7 @@ public class ProductController {
         return buildListResponse(productService.getProductCategories(company));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/delete-product/{id}")
     @Operation(summary = "Atualizar um produto")
     public ResponseEntity<ProductResponseDTO> update(
             @PathVariable Long id,
@@ -103,7 +103,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/update-product/{id}")
     @Operation(summary = "Remover um produto")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
