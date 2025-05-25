@@ -3,11 +3,13 @@ package com.Gyro.back_end_gyro.domain.email.service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -18,22 +20,41 @@ public class EmailService {
     private String gyroUrl;
 
     public void sendEmail(String to, String subject, String content) {
+        log.info("[EmailService] Preparando para enviar email para: {}", to);
+        log.debug("[EmailService] Assunto: {}", subject);
+        log.debug("[EmailService] Conteúdo: {}", content);
+
         try {
+            log.debug("[EmailService] Criando MimeMessage...");
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
+            log.debug("[EmailService] Configurando destinatário e assunto...");
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(buildTemplate(content,this.gyroUrl), true);
 
+            log.debug("[EmailService] Construindo template HTML...");
+            String emailContent = buildTemplate(content, this.gyroUrl);
+            helper.setText(emailContent, true);
+
+            log.info("[EmailService] Enviando email para {}...", to);
             mailSender.send(message);
+            log.info("[EmailService] Email enviado com sucesso para {}", to);
+
         } catch (MessagingException e) {
+            log.error("[EmailService] Erro ao enviar email para {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Erro ao enviar e-mail", e);
+        } catch (Exception e) {
+            log.error("[EmailService] Erro inesperado ao enviar email para {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Erro inesperado ao enviar e-mail", e);
         }
     }
 
+    private String buildTemplate(String content, String ourSite) {
+        log.debug("[EmailService] Construindo template HTML com conteúdo: {} e site: {}",
+                content.length() > 50 ? content.substring(0, 50) + "..." : content,
+                ourSite);
 
-    private String buildTemplate(String content,String ourSite) {
         return """
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -65,7 +86,6 @@ public class EmailService {
             </table>
         </body>
         </html>
-    """.formatted(content,ourSite);
+        """.formatted(content, ourSite);
     }
-
 }

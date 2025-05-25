@@ -21,75 +21,152 @@ public class ProductScheduleService {
 
     @Scheduled(fixedRate = 30000)
     public void handleExpiredProducts() {
-        log.info("Start handle expired products");
+        log.info("[Produtos Vencidos] Iniciando verificação de produtos vencidos...");
 
-        List<Product> allProducts = productRepository.findAll();
-        Map<String, List<Product>> productsByEmail = new HashMap<>();
+        try {
+            log.info("[Produtos Vencidos] Buscando todos os produtos no banco de dados...");
+            List<Product> allProducts = productRepository.findAll();
+            log.info("[Produtos Vencidos] Total de produtos encontrados: {}", allProducts.size());
 
-        for (Product product : allProducts) {
-            if (LocalDate.now().isAfter(product.getExpiresAt()) && !product.getIsExpiredProduct()) {
-                product.setIsExpiredProduct(true);
-                product.setIsSendedToEmail(false);
-                productRepository.save(product);
+            Map<String, List<Product>> productsByEmail = new HashMap<>();
+            int expiredProductsCount = 0;
 
-                String email = product.getCompany().getEmail();
-                productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
+            log.info("[Produtos Vencidos] Verificando produtos vencidos...");
+            for (Product product : allProducts) {
+                if (LocalDate.now().isAfter(product.getExpiresAt())) {
+                    log.debug("[Produtos Vencidos] Produto encontrado com data vencida: {} (ID: {})",
+                            product.getName(), product.getId());
+
+                    if (!product.getIsExpiredProduct()) {
+                        log.info("[Produtos Vencidos] Marcando produto como vencido: {} (ID: {})",
+                                product.getName(), product.getId());
+
+                        product.setIsExpiredProduct(true);
+                        product.setIsSendedToEmail(false);
+                        productRepository.save(product);
+                        expiredProductsCount++;
+
+                        String email = product.getCompany().getEmail();
+                        productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
+                        log.debug("[Produtos Vencidos] Produto adicionado à lista de email: {}", email);
+                    } else {
+                        log.debug("[Produtos Vencidos] Produto já estava marcado como vencido: {} (ID: {})",
+                                product.getName(), product.getId());
+                    }
+                }
             }
-        }
 
-        for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
-            log.info("Enviando e-mail para {} com {} produto(s) vencido(s)", entry.getKey(), entry.getValue().size());
+            log.info("[Produtos Vencidos] Total de produtos vencidos encontrados: {}", expiredProductsCount);
+            log.info("[Produtos Vencidos] Número de emails a serem enviados: {}", productsByEmail.size());
 
-            emailService.sendEmail(
-                    entry.getKey(),
-                    "Produtos vencidos",
-                    buildExpiredProductsMessage(entry.getValue())
-            );
+            for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
+                String email = entry.getKey();
+                int productsCount = entry.getValue().size();
 
-            for (Product product : entry.getValue()) {
-                product.setIsSendedToEmail(true);
-                productRepository.save(product);
+                log.info("[Produtos Vencidos] Preparando para enviar email para {} com {} produto(s) vencido(s)",
+                        email, productsCount);
+
+                try {
+                    emailService.sendEmail(
+                            email,
+                            "Produtos vencidos",
+                            buildExpiredProductsMessage(entry.getValue())
+                    );
+                    log.info("[Produtos Vencidos] Email enviado com sucesso para {}", email);
+
+                    for (Product product : entry.getValue()) {
+                        product.setIsSendedToEmail(true);
+                        productRepository.save(product);
+                        log.debug("[Produtos Vencidos] Produto {} (ID: {}) marcado como email enviado",
+                                product.getName(), product.getId());
+                    }
+                } catch (Exception e) {
+                    log.error("[Produtos Vencidos] Falha ao enviar email para {}: {}", email, e.getMessage(), e);
+                }
             }
+
+            log.info("[Produtos Vencidos] Processamento concluído com sucesso");
+        } catch (Exception e) {
+            log.error("[Produtos Vencidos] Erro durante o processamento: {}", e.getMessage(), e);
         }
     }
 
     @Scheduled(fixedRate = 30000)
     public void handleOutOfStockProducts() {
-        List<Product> allProducts = productRepository.findAll();
-        Map<String, List<Product>> productsByEmail = new HashMap<>();
+        log.info("[Estoque Baixo] Iniciando verificação de produtos com estoque baixo...");
 
-        log.info("Start handle out of stock products");
+        try {
+            log.info("[Estoque Baixo] Buscando todos os produtos no banco de dados...");
+            List<Product> allProducts = productRepository.findAll();
+            log.info("[Estoque Baixo] Total de produtos encontrados: {}", allProducts.size());
 
-        int minWarning = Integer.MAX_VALUE;
-        for (Product product : allProducts) {
-            if (product.getWarningQuantity() < minWarning) {
-                minWarning = product.getWarningQuantity();
+            Map<String, List<Product>> productsByEmail = new HashMap<>();
+            int outOfStockProductsCount = 0;
+
+            log.info("[Estoque Baixo] Determinando quantidade mínima de alerta...");
+            int minWarning = Integer.MAX_VALUE;
+            for (Product product : allProducts) {
+                if (product.getWarningQuantity() < minWarning) {
+                    minWarning = product.getWarningQuantity();
+                }
             }
-        }
+            log.info("[Estoque Baixo] Quantidade mínima de alerta determinada: {}", minWarning);
 
-        for (Product product : allProducts) {
-            if (product.getQuantity() <= minWarning && !product.getIsSendedToEmail()) {
-                product.setIsOutOfStock(true);
-                product.setIsSendedToEmail(true);
-                productRepository.save(product);
+            log.info("[Estoque Baixo] Verificando produtos com estoque baixo...");
+            for (Product product : allProducts) {
+                if (product.getQuantity() <= minWarning) {
+                    log.debug("[Estoque Baixo] Produto encontrado com estoque baixo: {} (ID: {}) - Quantidade: {}, Mínimo: {}",
+                            product.getName(), product.getId(), product.getQuantity(), minWarning);
 
-                String email = product.getCompany().getEmail();
-                productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
+                    if (!product.getIsSendedToEmail()) {
+                        log.info("[Estoque Baixo] Marcando produto como estoque baixo: {} (ID: {})",
+                                product.getName(), product.getId());
+
+                        product.setIsOutOfStock(true);
+                        product.setIsSendedToEmail(true);
+                        productRepository.save(product);
+                        outOfStockProductsCount++;
+
+                        String email = product.getCompany().getEmail();
+                        productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
+                        log.debug("[Estoque Baixo] Produto adicionado à lista de email: {}", email);
+                    } else {
+                        log.debug("[Estoque Baixo] Email já foi enviado para este produto: {} (ID: {})",
+                                product.getName(), product.getId());
+                    }
+                }
             }
-        }
 
-        for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
-            log.info("Enviando e-mail para {} com {} produto(s) com estoque baixo", entry.getKey(), entry.getValue().size());
+            log.info("[Estoque Baixo] Total de produtos com estoque baixo encontrados: {}", outOfStockProductsCount);
+            log.info("[Estoque Baixo] Número de emails a serem enviados: {}", productsByEmail.size());
 
-            emailService.sendEmail(
-                    entry.getKey(),
-                    "Produtos com estoque baixo",
-                    buildOutOfStockMessage(entry.getValue())
-            );
+            for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
+                String email = entry.getKey();
+                int productsCount = entry.getValue().size();
+
+                log.info("[Estoque Baixo] Preparando para enviar email para {} com {} produto(s) com estoque baixo",
+                        email, productsCount);
+
+                try {
+                    emailService.sendEmail(
+                            email,
+                            "Produtos com estoque baixo",
+                            buildOutOfStockMessage(entry.getValue())
+                    );
+                    log.info("[Estoque Baixo] Email enviado com sucesso para {}", email);
+                } catch (Exception e) {
+                    log.error("[Estoque Baixo] Falha ao enviar email para {}: {}", email, e.getMessage(), e);
+                }
+            }
+
+            log.info("[Estoque Baixo] Processamento concluído com sucesso");
+        } catch (Exception e) {
+            log.error("[Estoque Baixo] Erro durante o processamento: {}", e.getMessage(), e);
         }
     }
 
     private String buildExpiredProductsMessage(List<Product> products) {
+        log.debug("[Produtos Vencidos] Construindo mensagem de email para {} produtos", products.size());
         StringBuilder sb = new StringBuilder("Produtos vencidos:\n\n");
         for (Product product : products) {
             sb.append("- ")
@@ -102,6 +179,7 @@ public class ProductScheduleService {
     }
 
     private String buildOutOfStockMessage(List<Product> products) {
+        log.debug("[Estoque Baixo] Construindo mensagem de email para {} produtos", products.size());
         StringBuilder sb = new StringBuilder("Produtos abaixo do estoque mínimo:\n\n");
         for (Product product : products) {
             sb.append("- ")
