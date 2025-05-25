@@ -21,6 +21,8 @@ public class ProductScheduleService {
 
     @Scheduled(fixedRate = 30000)
     public void handleExpiredProducts() {
+        log.info("Start handle expired products");
+
         List<Product> allProducts = productRepository.findAll();
         Map<String, List<Product>> productsByEmail = new HashMap<>();
 
@@ -55,6 +57,8 @@ public class ProductScheduleService {
     public void handleOutOfStockProducts() {
         List<Product> allProducts = productRepository.findAll();
         Map<String, List<Product>> productsByEmail = new HashMap<>();
+
+        log.info("Start handle out of stock products");
 
         int minWarning = Integer.MAX_VALUE;
         for (Product product : allProducts) {
