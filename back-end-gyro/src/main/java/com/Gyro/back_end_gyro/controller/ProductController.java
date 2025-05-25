@@ -92,7 +92,7 @@ public class ProductController {
         return buildListResponse(productService.getProductCategories(company));
     }
 
-    @PutMapping("/delete-product/{id}")
+    @PutMapping("/update-product/{id}")
     @Operation(summary = "Atualizar um produto")
     public ResponseEntity<ProductResponseDTO> update(
             @PathVariable Long id,
@@ -103,7 +103,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
-    @DeleteMapping("/update-product/{id}")
+    @DeleteMapping("/delete-product/{id}")
     @Operation(summary = "Remover um produto")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
