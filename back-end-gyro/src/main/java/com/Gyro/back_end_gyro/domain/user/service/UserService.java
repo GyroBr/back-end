@@ -82,6 +82,10 @@ public class UserService {
     }
 
 
+    public void deleteUser(User user) {
+        userRepository.delete(user);
+    }
+
     public Boolean isAdmin(String role) {
         if (role.equals("ROLE_ADMIN")) {
             return true;

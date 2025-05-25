@@ -44,6 +44,7 @@ public class EmployeeService {
 
     public void deleteEmployee(Long employeeId) {
         var employee = existsEmployeeById(employeeId);
+        userService.deleteUser(employee.getUser());
         employeeRepository.delete(employee);
     }
 
