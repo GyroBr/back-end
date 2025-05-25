@@ -4,20 +4,22 @@ import com.Gyro.back_end_gyro.domain.email.service.EmailService;
 import com.Gyro.back_end_gyro.domain.product.entity.Product;
 import com.Gyro.back_end_gyro.domain.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.*;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProductScheduleService {
-    
+
     private final ProductRepository productRepository;
     private final EmailService emailService;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 30000)
     public void handleExpiredProducts() {
         List<Product> allProducts = productRepository.findAll();
         Map<String, List<Product>> productsByEmail = new HashMap<>();
@@ -29,14 +31,13 @@ public class ProductScheduleService {
                 productRepository.save(product);
 
                 String email = product.getCompany().getEmail();
-                if (!productsByEmail.containsKey(email)) {
-                    productsByEmail.put(email, new ArrayList<>());
-                }
-                productsByEmail.get(email).add(product);
+                productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
             }
         }
 
         for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
+            log.info("Enviando e-mail para {} com {} produto(s) vencido(s)", entry.getKey(), entry.getValue().size());
+
             emailService.sendEmail(
                     entry.getKey(),
                     "Produtos vencidos",
@@ -50,7 +51,7 @@ public class ProductScheduleService {
         }
     }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 30000)
     public void handleOutOfStockProducts() {
         List<Product> allProducts = productRepository.findAll();
         Map<String, List<Product>> productsByEmail = new HashMap<>();
@@ -69,14 +70,13 @@ public class ProductScheduleService {
                 productRepository.save(product);
 
                 String email = product.getCompany().getEmail();
-                if (!productsByEmail.containsKey(email)) {
-                    productsByEmail.put(email, new ArrayList<>());
-                }
-                productsByEmail.get(email).add(product);
+                productsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(product);
             }
         }
 
         for (Map.Entry<String, List<Product>> entry : productsByEmail.entrySet()) {
+            log.info("Enviando e-mail para {} com {} produto(s) com estoque baixo", entry.getKey(), entry.getValue().size());
+
             emailService.sendEmail(
                     entry.getKey(),
                     "Produtos com estoque baixo",
