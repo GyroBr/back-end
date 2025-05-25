@@ -90,11 +90,13 @@ public class ProductService {
 
     private Product updateProductFromRequest(Product existingProduct, ProductRequestDTO request) {
         Product updatedProduct = new Product(request);
-        updatedProduct.setId(existingProduct.getId());
+        updatedProduct.setImage(existingProduct.getImage());
         updatedProduct.setCompany(existingProduct.getCompany());
         updatedProduct.setTotalSales(existingProduct.getTotalSales());
         updatedProduct.setComboProducts(existingProduct.getComboProducts());
         updatedProduct.setOrderProducts(existingProduct.getOrderProducts());
+        updatedProduct.setId(existingProduct.getId());
+
         return updatedProduct;
     }
 }
