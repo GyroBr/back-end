@@ -13,6 +13,7 @@ import com.Gyro.back_end_gyro.infra.excption.handlers.exceptions.NotFoundExcepti
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestAttributes;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
+    private final RequestAttributes requestAttributes;
 
 
     public CompanyResponseDTO createCompany(CompanyRequestDTO companyRequestDTO) {
@@ -39,7 +41,7 @@ public class CompanyService {
         var newCompany = updateCompanyFactory(company, companyRequestDTO);
         var newUser = userService.updateUser(company, newCompany, Roles.ROLE_ADMIN);
         newCompany.setUser(newUser);
-        return new CompanyResponseDTO(companyRepository.save(company));
+        return new CompanyResponseDTO(companyRepository.save(newCompany));
 
     }
 
@@ -59,6 +61,12 @@ public class CompanyService {
         newCompany.setOrders(company.getOrders());
         newCompany.setCombos(company.getCombos());
         newCompany.setProducts(company.getProducts());
+        if (!companyRequestDTO.address().equals(company.getAddress())) {
+            newCompany.setAddress(new Address(companyRequestDTO.address()));
+        } else {
+            newCompany.setAddress(company.getAddress());
+        }
+
         newCompany.setId(company.getId());
         return newCompany;
     }
