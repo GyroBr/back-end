@@ -13,7 +13,6 @@ import com.Gyro.back_end_gyro.infra.excption.handlers.exceptions.NotFoundExcepti
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestAttributes;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +21,6 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
-    private final RequestAttributes requestAttributes;
 
 
     public CompanyResponseDTO createCompany(CompanyRequestDTO companyRequestDTO) {
