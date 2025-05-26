@@ -59,6 +59,7 @@ public class CompanyService {
         newCompany.setOrders(company.getOrders());
         newCompany.setCombos(company.getCombos());
         newCompany.setProducts(company.getProducts());
+        newCompany.setId(company.getId());
         return newCompany;
     }
 
