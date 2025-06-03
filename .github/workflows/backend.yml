@@ -37,7 +37,7 @@ jobs:
             for HOST in 10.0.1.100 10.0.1.101; do
               echo "▶ Acessando $HOST"
 
-              sudo ssh -o StrictHostKeyChecking=no -i /home/ubuntu/minhassh.pem ubuntu@$HOST "
+              sudo ssh -o StrictHostKeyChecking=no -i /home/ubuntu/minhasshf.pem ubuntu@$HOST "
                 cd /home/ubuntu &&
                 echo 'Parando e removendo container antigo em $HOST...' &&
                 sudo docker-compose down &&
